@@ -1,0 +1,22 @@
+
+String selection = textArea.getSelectedText();
+if (selection == null) selection = "";
+
+selection = selection.replaceAll(" *//(!?) *(.*)", "$2");
+
+textArea.setSelectedText("/**\n"
+                       + " ******************************************************************************\n"
+                       + " *\n"
+                       + " * \\brief            " + selection + "\n"
+                       + " *\n"
+                       + " ******************************************************************************\n"
+                       + " */");
+
+textArea.setCaretPosition(textArea.getCaretPosition() - 95 + 7);
+
+
+
+
+
+ 
+

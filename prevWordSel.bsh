@@ -1,0 +1,115 @@
+
+Selection[] existingSelection = textArea.getSelection();
+ 
+// Grab word under cursor
+buffer.readLock();
+int pos = textArea.getCaretPosition();
+if (pos > 0) textArea.setCaretPosition(pos - 1);
+textArea.selectWord();
+String word = textArea.getSelectedText();
+
+textArea.selectLine();
+String line = textArea.getSelectedText();
+int lineOffset = pos - textArea.getSelection()[0].getStart();
+
+textArea.setCaretPosition(pos);
+buffer.readUnlock();
+
+int newPos = pos;
+
+if (word.matches("([A-Z0-9]+_?)+"))
+{
+   // Matching a ALL_CAPS_WITH_UNDERSCORES_WORD
+   
+   if (line.charAt(lineOffset - 1) == '_')
+   {
+      // If we're at an _, move forward one
+      newPos--;
+   }
+   else
+   {
+      newPos--;
+      lineOffset--;
+
+      // Otherwise, find the next underscore or non-capital letter, move to it
+      while (lineOffset > 0 && line.substring(lineOffset - 1, lineOffset).matches("[A-Z0-9]"))
+      {
+         newPos--;
+         lineOffset--;
+      }  
+   }
+}
+else if (word.matches("[a-zA-Z0-9_]+_?"))
+{
+   newPos--;
+   lineOffset--;
+   
+   // Matching a normal word
+   while (lineOffset > 0
+          && line.substring(lineOffset, lineOffset + 1).matches("[a-z]"))
+   {
+      newPos--;
+      lineOffset--;
+   }
+   
+   if (!line.substring(lineOffset, lineOffset + 1).matches("[a-zA-Z0-9]"))
+   {
+      // Too far!
+      newPos++;
+      lineOffset++;
+   }
+}
+else
+{
+   newPos--;
+   lineOffset--;
+   
+   // Find the next word char
+   while (lineOffset > 0
+          && line.substring(lineOffset, lineOffset + 1).matches("[^A-Z0-9_]"))
+   {
+      newPos--;
+      lineOffset--;
+   }
+}
+
+
+Selection[] newSelections = new Selection[1];
+if (existingSelection.length > 0)
+{
+   int selStart = existingSelection[0].getStart();
+   int selEnd = existingSelection[0].getEnd();
+   
+   if (pos == selStart)
+   {
+      selStart = newPos;
+   } 
+   else if (pos == selEnd)
+   {
+      selEnd = newPos;  
+   }
+   else 
+   {
+      selStart = newPos;
+   }
+   
+   if (selStart < selEnd)
+      newSelections[0] = new Selection.Range(selStart, selEnd);
+   else
+      newSelections[0] = new Selection.Range(selEnd, selStart);
+}
+else
+{
+   newSelections[0] = new Selection.Range(newPos, pos);
+}
+
+textArea.setCaretPosition(newPos);
+textArea.setSelection(newSelections);
+
+/* 
+   TEST AREA
+   
+   memberThingy_.functionNameWithLotsOfLittleWordsInItToMakeItMoreAnnoyingToWorkWith(LOL_IM_A_CONSTANT, "I'm in strings", imALocalVariable);
+   
+   
+*/

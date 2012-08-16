@@ -1,0 +1,101 @@
+
+Selection[] existingSelection = textArea.getSelection();
+
+// Grab word under cursor
+buffer.readLock();
+int pos = textArea.getCaretPosition();
+textArea.selectWord();
+String word = textArea.getSelectedText();
+
+textArea.selectLine();
+String line = textArea.getSelectedText();
+int lineOffset = pos - textArea.getSelection()[0].getStart();
+
+textArea.setCaretPosition(pos);
+buffer.readUnlock();
+
+int newPos = pos;
+
+if (word.matches("([A-Z0-9]+_?)+"))
+{
+   // Matching a ALL_CAPS_WITH_UNDERSCORES_WORD
+   
+   if (line.charAt(lineOffset) == '_')
+   {
+      // If we're at an _, move forward one
+      newPos++;
+   }
+   else   
+   {
+      // Otherwise, find the next underscore or non-capital letter, move to it
+      while (line.substring(lineOffset, lineOffset + 1).matches("[A-Z0-9]")
+             && lineOffset < line.length() - 1)
+      {
+         newPos++;
+         lineOffset++;
+      }  
+   }
+} 
+else if (word.matches("[a-zA-Z0-9_]+_?"))
+{
+   // Matching a normal word
+   newPos++;
+   lineOffset++;
+   
+   while (line.substring(lineOffset, lineOffset + 1).matches("[a-z]")
+          && lineOffset < line.length() - 1)
+   {
+      newPos++;
+      lineOffset++;
+   }
+}
+else
+{
+   // Find the next word char
+   while (line.substring(lineOffset, lineOffset + 1).matches("[^a-zA-Z0-9_]")
+          && lineOffset < line.length() - 1)
+   {
+      newPos++;
+      lineOffset++;
+   }
+}
+
+Selection[] newSelections = new Selection[1];
+if (existingSelection.length > 0)
+{
+   int selStart = existingSelection[0].getStart();
+   int selEnd = existingSelection[0].getEnd();
+   
+   if (pos == selStart)
+   {
+      selStart = newPos;
+   } 
+   else if (pos == selEnd)
+   {
+      selEnd = newPos;  
+   }
+   else 
+   {
+      selEnd = newPos;
+   }
+   
+   if (selStart < selEnd)
+      newSelections[0] = new Selection.Range(selStart, selEnd);
+   else
+      newSelections[0] = new Selection.Range(selEnd, selStart);
+}
+else
+{
+   newSelections[0] = new Selection.Range(pos, newPos);
+}
+
+textArea.setCaretPosition(newPos);
+textArea.setSelection(newSelections);
+
+/* 
+   TEST AREA
+   
+   memberThingy_.functionNameWithLotsOfWordsInIt(LOL_IM_A_CONSTANT, "I'm in strings", imALocalVariable);
+   
+   
+*/

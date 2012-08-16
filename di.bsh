@@ -1,0 +1,5 @@
+
+String thingToAdd = textArea.getSelectedText();
+
+String realClass = thingToAdd.split(" ")[0];
+String 

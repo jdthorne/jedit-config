@@ -1,0 +1,131 @@
+// import statement
+import javax.swing.border.*;
+import javax.swing.*;
+import javax.swing.event.*;
+import javax.swing.tree.*;
+
+
+/**
+ * Displays a dialog similar to the hypersearch dialog
+ * which list all the markers set in the current buffer. Clicking on the entry
+ * takes you to the marker in the buffer.
+ *
+ * @author: Saimon Moore (saimonmoore@yahoo.co.uk)
+ * @since 19/02/2004
+ * @version: 0.1
+ */
+
+
+markerResult()
+{
+    linePosition = 0;
+    screenPosition = 0;
+    text = "";
+    path = "";
+}
+
+createDialog()
+{
+jeditView = view;
+// create dialog object
+title = "List Markers in Buffer";
+dialog = new JDialog(view, title, false);
+content = new JPanel(new BorderLayout());
+
+resultTreeRoot = new DefaultMutableTreeNode();
+
+markers = buffer.getMarkers();
+
+
+for (e = markers.elements(); e.hasMoreElements() ;) {
+ marker = e.nextElement();
+ list = new ArrayList();
+ line = buffer.getLineOfOffset(marker.getPosition());
+ text = buffer.getLineText(line);
+ list.add(text);
+ list.add("" + line);
+ list.add("" + marker.getPosition());
+ list.add(buffer.getPath());
+ node = new DefaultMutableTreeNode(list);
+ resultTreeRoot.add(node);
+}
+
+resultTreeModel = new DefaultTreeModel(resultTreeRoot);
+resultTree = new JTree(resultTreeModel);
+//resultTree.setCellRenderer(new ResultCellRenderer());
+resultTree.setVisibleRowCount(16);
+resultTree.setRootVisible(false);
+resultTree.setShowsRootHandles(true);
+resultTree.setEditable(false);
+
+void goToSelectedNode()
+	{
+		TreePath path = resultTree.getSelectionPath();
+		if(path == null)
+			return;
+
+		DefaultMutableTreeNode node = (DefaultMutableTreeNode)path
+			.getLastPathComponent();
+		Object value = node.getUserObject();
+
+			l = ((List)value);
+
+                VFSManager.runInAWTThread(new Runnable()
+                {
+                    public void run()
+                    {
+                        buffer = jEdit.openFile(null,(String) l.get(3));
+                        EditPane pane = jeditView.goToBuffer(buffer);
+                        JEditTextArea textArea = pane.getTextArea();
+                        textArea.moveCaretPosition(Integer.parseInt((String) l.get(2)));
+                        dialog.setVisible(false);
+                    }
+                });
+	}
+
+mousePressed(MouseEvent evt)
+		{
+            if(evt.isConsumed())
+				return;
+
+			TreePath path1 = resultTree.getPathForLocation(
+				evt.getX(),evt.getY());
+			if(path1 == null)
+				return;
+
+			resultTree.setSelectionPath(path1);
+			if (GUIUtilities.isPopupTrigger(evt))
+				showPopupMenu(evt);
+			else
+			{
+				goToSelectedNode();
+
+				jeditView.toFront();
+				jeditView.requestFocus();
+				jeditView.getTextArea().requestFocus();
+			}
+
+		}
+
+        void mouseClicked(MouseEvent e) {}
+        void mouseEntered(MouseEvent e) {}
+        void mouseExited(MouseEvent e) {}
+        void mouseReleased(MouseEvent e) {}
+
+
+//resultTree.addKeyListener(new KeyHandler());
+resultTree.addMouseListener(this);
+
+JScrollPane scrollPane = new JScrollPane(resultTree);
+Dimension dim = scrollPane.getPreferredSize();
+dim.width = 800;
+dim.height = 600;
+scrollPane.setPreferredSize(dim);
+content.add(BorderLayout.CENTER, scrollPane);
+content.setBorder(new EmptyBorder(12, 12, 12, 12));
+dialog.setContentPane(content);
+dialog.setSize(dim);
+dialog.setVisible(true);
+}
+
+createDialog();

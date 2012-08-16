@@ -1,0 +1,69 @@
+
+// Grab word under cursor
+buffer.readLock();
+int pos = textArea.getCaretPosition();
+textArea.selectWord();
+String word = textArea.getSelectedText();
+
+textArea.selectLine();
+String line = textArea.getSelectedText();
+int lineOffset = pos - textArea.getSelection()[0].getStart();
+
+textArea.setCaretPosition(pos);
+buffer.readUnlock();
+
+int newPos = pos;
+
+if (word.matches("([A-Z0-9]+_?)+"))
+{
+   // Matching a ALL_CAPS_WITH_UNDERSCORES_WORD
+   
+   if (line.charAt(lineOffset) == '_')
+   {
+      // If we're at an _, move forward one
+      newPos++;
+   }
+   else   
+   {
+      // Otherwise, find the next underscore or non-capital letter, move to it
+      while (lineOffset < line.length() - 1 
+             && line.substring(lineOffset, lineOffset + 1).matches("[A-Z0-9]"))
+      {
+         newPos++;
+         lineOffset++;
+      }  
+   }
+}
+else if (word.matches("[a-zA-Z0-9_]+_?"))
+{
+   // Matching a normal word
+   newPos++;
+   lineOffset++;
+   
+   while (lineOffset < line.length() - 1
+          && line.substring(lineOffset, lineOffset + 1).matches("[a-z]"))
+   {
+      newPos++;
+      lineOffset++;
+   }
+}
+else
+{
+   // Find the next word char
+   while (lineOffset < line.length() - 1
+          && line.substring(lineOffset, lineOffset + 1).matches("[^a-zA-Z0-9_]"))
+   {
+      newPos++;
+      lineOffset++;
+   }
+}
+
+textArea.setCaretPosition(newPos);
+
+/* 
+   TEST AREA
+   
+   memberThingy_.functionNameWithLotsOfWordsInIt(LOL_IM_A_CONSTANT, "I'm in strings", imALocalVariable);
+   
+   
+*/
